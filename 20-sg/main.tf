@@ -56,7 +56,7 @@ module "vpn_sg" {
   sg_name = "vpn"
   vpc_id = local.vpc_id
   common_tags = var.common_tags
-  sg_tags = var.vpn_sg_tags
+  # sg_tags = var.vpn_sg_tags
 }
 
 module "app_alb_sg" {
@@ -66,7 +66,17 @@ module "app_alb_sg" {
   sg_name = "app-alb"
   vpc_id = local.vpc_id
   common_tags = var.common_tags
-  sg_tags = var.app_alb_sg_tags
+  sg_tags = var.web_alb_sg_tags
+}
+
+module "web_alb_sg" {
+  source = "git::https://github.com/Lakshman265055/terraform-aws-security-group.git?ref=main"
+  project_name = var.project_name
+  environment = var.environment
+  sg_name = "web-alb"
+  vpc_id = local.vpc_id
+  common_tags = var.common_tags
+  sg_tags = var.web_alb_sg_tags
 }
 
 resource "aws_security_group_rule" "mysql_backend" {
@@ -249,4 +259,50 @@ resource "aws_security_group_rule" "backend-vpn-8080" {
   source_security_group_id = module.vpn_sg.id
   security_group_id = module.backend_sg.id
 }
+
+resource "aws_security_group_rule" "web_alb_http" {
+  type = "ingress"
+  from_port = 80
+  to_port = 80
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.web_alb_sg.id
+}
+
+resource "aws_security_group_rule" "web_alb_https" {
+  type = "ingress"
+  from_port = 443
+  to_port = 443
+  protocol = "tcp"
+  cidr_blocks = ["0.0.0.0/0"]
+  security_group_id = module.web_alb_sg.id
+}
+
+resource "aws_security_group_rule" "frontend_vpn" {
+  type = "ingress"
+  from_port = 22
+  to_port = 22
+  protocol = "tcp"
+  source_security_group_id = module.vpn_sg.id
+  security_group_id = module.frontend_sg.id
+}
+
+
+resource "aws_security_group_rule" "frontend_web_alb" {
+  type = "ingress"
+  from_port = 80
+  to_port = 80
+  protocol = "tcp"
+  source_security_group_id = module.web_alb_sg.id
+  security_group_id = module.frontend_sg.id
+}
+resource "aws_security_group_rule" "app_alb_frontend" {
+  type = "ingress"
+  from_port = 80
+  to_port = 80
+  protocol = "tcp"
+  source_security_group_id = module.frontend_sg.id
+  security_group_id = module.app_alb_sg.id
+}
+
 

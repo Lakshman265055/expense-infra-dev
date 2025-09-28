@@ -15,7 +15,7 @@ module "app_alb" {
   )
 }
 
-resource "aws_lb_listener" "front_end" {
+resource "aws_lb_listener" "http" {
   load_balancer_arn = module.app_alb.arn
   port              = "80"
   protocol          = "HTTP"
@@ -41,7 +41,7 @@ resource "aws_lb_listener" "front_end" {
 #   allow_overwrite = true
 # }
 
-resource "aws_route53_record" "frontend" {
+resource "aws_route53_record" "http" {
   zone_id = var.zone_id
   name    = "*.app-${var.environment}"
   type    = "A"
